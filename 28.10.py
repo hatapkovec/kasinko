@@ -1,127 +1,147 @@
-"""
-Jednoduchá ruleta v Pythone (funguje v termináli / PyCharme).
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jednoduchá ruleta</title>
+<style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f0f0f0; }
+    .roulette { margin: 20px 0; }
+    button { padding: 10px 20px; margin-top: 10px; }
+    input { padding: 5px; width: 80px; }
+</style>
+</head>
+<body>
 
-Pravidlá:
-- Môžeš staviť na:
-    1) číslo (0–36)
-    2) farbu: 'cervena' alebo 'cierna'
-    3) 'parne' alebo 'neparne'
-- Výhry:
-    - číslo → 35:1
-    - farba → 1:1
-    - parne/neparne → 1:1
-"""
+<h1>🎰 Vitaj v rulete!</h1>
+<p id="bank">Bank: 100 $</p>
 
-import random
-import time
+<div>
+    <label>Stávka: <input type="number" id="stavka" min="1" value="10"></label>
+</div>
 
-# Červené a čierne čísla podľa európskej rulety
-CERVENE = {1, 3, 5, 7, 9, 12, 14, 16, 18,
-           19, 21, 23, 25, 27, 30, 32, 34, 36}
-CIERNE = {2, 4, 6, 8, 10, 11, 13, 15, 17,
-          20, 22, 24, 26, 28, 29, 31, 33, 35}
+<div>
+    <label>Typ stávky:
+        <select id="typ">
+            <option value="1">Číslo (0-36)</option>
+            <option value="2">Farba (cervena / cierna)</option>
+            <option value="3">Parne / Nepárne</option>
+        </select>
+    </label>
+</div>
+
+<div id="volbaDiv">
+    <label>Voľba: <input type="text" id="volba"></label>
+</div>
+
+<button onclick="točitRuletu()">Roztoč ruletu 🎡</button>
+
+<p id="vysledok"></p>
+
+<script>
+const CERVENE = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const CIERNE = new Set([2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35]);
+
+let bank = 100;
+
+document.getElementById('typ').addEventListener('change', () => {
+    const typ = document.getElementById('typ').value;
+    const volbaInput = document.getElementById('volba');
+    if (typ === '1') {
+        volbaInput.value = '';
+        volbaInput.placeholder = '0-36';
+    } else if (typ === '2') {
+        volbaInput.value = '';
+        volbaInput.placeholder = 'cervena / cierna';
+    } else {
+        volbaInput.value = '';
+        volbaInput.placeholder = 'parne / neparne';
+    }
+});
+
+function roztoctRuletu() {
+    const cislo = Math.floor(Math.random() * 37);
+    let farba;
+    if (cislo === 0) farba = 'zelena';
+    else if (CERVENE.has(cislo)) farba = 'cervena';
+    else farba = 'cierna';
+    return {cislo, farba};
+}
+
+function točitRuletu() {
+    const stavka = parseInt(document.getElementById('stavka').value);
+    const typ = document.getElementById('typ').value;
+    let volba = document.getElementById('volba').value.toLowerCase();
+    const vysledok = document.getElementById('vysledok');
+
+    if (stavka <= 0 || stavka > bank) {
+        vysledok.textContent = '❌ Neplatná stávka.';
+        return;
+    }
+
+    if (typ === '1') {
+        volba = parseInt(volba);
+        if (isNaN(volba) || volba < 0 || volba > 36) {
+            vysledok.textContent = '❌ Neplatné číslo.';
+            return;
+        }
+    } else if (typ === '2') {
+        if (!['cervena','cierna'].includes(volba)) {
+            vysledok.textContent = '❌ Neplatná farba.';
+            return;
+        }
+    } else if (typ === '3') {
+        if (!['parne','neparne'].includes(volba)) {
+            vysledok.textContent = '❌ Neplatná voľba.';
+            return;
+        }
+    }
+
+    vysledok.textContent = '🎡 Roztočenie rulety...';
+
+    setTimeout(() => {
+        const {cislo, farba} = roztoctRuletu();
+        let vyhra = 0;
+        let message = `➡️ Výsledok: ${cislo} (${farba})\n`;
+
+        if (typ === '1') {
+            if (cislo === volba) {
+                vyhra = stavka * 35;
+                message += `💰 Trafené číslo! Vyhrávaš ${vyhra} $.`;
+            } else {
+                message += '❌ Netriafol si číslo.';
+            }
+        } else if (typ === '2') {
+            if (farba === volba) {
+                vyhra = stavka;
+                message += `✅ Trafená farba! Vyhrávaš ${vyhra} $.`;
+            } else {
+                message += '❌ Netriafol si farbu.';
+            }
+        } else if (typ === '3') {
+            if (cislo === 0) {
+                message += '❌ Padla nula – prehrávaš.';
+            } else if ((cislo % 2 === 0 && volba === 'parne') || (cislo % 2 === 1 && volba === 'neparne')) {
+                vyhra = stavka;
+                message += `✅ Trafené! Vyhrávaš ${vyhra} $.`;
+            } else {
+                message += '❌ Zle, prehrávaš.';
+            }
+        }
+
+        bank += vyhra - stavka;
+        document.getElementById('bank').textContent = `Bank: ${bank} $`;
+        vysledok.textContent = message;
+
+        if (bank <= 0) {
+            vysledok.textContent += '\n💸 Prehral si všetky peniaze! Hra končí.';
+        }
+
+    }, 1000);
+}
+</script>
+
+</body>
+</html>
 
 
-def roztoct_ruletu():
-    cislo = random.randint(0, 36)
-    if cislo == 0:
-        farba = 'zelena'
-    elif cislo in CERVENE:
-        farba = 'cervena'
-    else:
-        farba = 'cierna'
-    return cislo, farba
-
-
-def ruleta():
-    bank = 100
-    print("🎰 Vitaj v rulete! Máš 100 $.")
-
-    while bank > 0:
-        print(f"\nTvoj aktuálny bank: {bank} $")
-        try:
-            stavka = int(input("Zadaj výšku stávky (0 pre koniec): "))
-        except ValueError:
-            print("❌ Zadaj číslo.")
-            continue
-
-        if stavka == 0:
-            print("👋 Koniec hry. Ďakujeme za hranie!")
-            break
-        if stavka > bank or stavka < 0:
-            print("❌ Neplatná stávka.")
-            continue
-
-        print("\nTyp stávky:")
-        print("1 - Číslo (0-36)")
-        print("2 - Farba (cervena / cierna)")
-        print("3 - Párne / Nepárne")
-        typ = input("Vyber (1/2/3): ")
-
-        if typ == '1':
-            try:
-                volba = int(input("Zvoľ číslo (0-36): "))
-                if not (0 <= volba <= 36):
-                    raise ValueError
-            except ValueError:
-                print("❌ Zadaj číslo 0–36.")
-                continue
-
-        elif typ == '2':
-            volba = input("Zvoľ farbu (cervena/cierna): ").lower()
-            if volba not in ['cervena', 'cierna']:
-                print("❌ Neplatná farba.")
-                continue
-
-        elif typ == '3':
-            volba = input("Párne alebo nepárne? (parne/neparne): ").lower()
-            if volba not in ['parne', 'neparne']:
-                print("❌ Neplatná voľba.")
-                continue
-        else:
-            print("❌ Neplatná voľba.")
-            continue
-
-        print("\n🎡 Roztočenie rulety...")
-        time.sleep(1.5)
-        cislo, farba = roztoct_ruletu()
-        print(f"➡️ Výsledok: {cislo} ({farba})")
-
-        vyhra = 0
-
-        # vyhodnotenie výsledku
-        if typ == '1':
-            if cislo == volba:
-                vyhra = stavka * 35
-                print(f"💰 Trafené číslo! Vyhrávaš {vyhra} $.")
-            else:
-                print("❌ Netriafol si číslo.")
-
-        elif typ == '2':
-            if farba == volba:
-                vyhra = stavka
-                print(f"✅ Trafená farba! Vyhrávaš {vyhra} $.")
-            else:
-                print("❌ Netriafol si farbu.")
-
-        elif typ == '3':
-            if cislo == 0:
-                print("❌ Padla nula – prehrávaš.")
-            elif (cislo % 2 == 0 and volba == 'parne') or (cislo % 2 == 1 and volba == 'neparne'):
-                vyhra = stavka
-                print(f"✅ Trafené! Vyhrávaš {vyhra} $.")
-            else:
-                print("❌ Zle, prehrávaš.")
-
-        # aktualizácia banku
-        bank += vyhra - stavka
-
-        if bank <= 0:
-            print("\n💸 Prehral si všetky peniaze! Hra končí.")
-            break
-
-    print("\n🎲 Ďakujeme za hranie rulety!")
-
-
-if __name__ == '__main__':
-    ruleta()
